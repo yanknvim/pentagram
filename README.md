@@ -3,8 +3,7 @@ RISCV CPU implemented with Veryl
 
 # Todo
 - Implement RV32I
-    - [ ] Implement I instructions
-        - [x] ADDI
+    - [x] Implement I instructions
     - [ ] Implement R instructions
     - [ ] Implement U instructions
     - [ ] Implement S instructions
