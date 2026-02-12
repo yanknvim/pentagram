@@ -1,0 +1,23 @@
+import utils::*;
+
+module DataMem (
+    clk  : input  clock    ,
+    rst  : input  reset    ,
+    addr : input  logic<32>,
+    data : output logic<32>,
+    wen  : input  logic    ,
+    waddr: input  logic<32>,
+    wdata: input  logic<32>,
+) {
+    var mem: logic<32> [2048];
+
+    always_comb {
+        data = mem[addr];
+    }
+
+    always_ff {
+        if wen == 1 {
+            mem[waddr] = wdata;
+        }
+    }
+}

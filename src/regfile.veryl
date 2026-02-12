@@ -1,0 +1,26 @@
+import utils::*;
+
+module Regfile (
+    clk     : input  clock    ,
+    rst     : input  reset    ,
+    rs1_addr: input  logic<5> ,
+    rs1_data: output logic<32>,
+    rs2_addr: input  logic<5> ,
+    rs2_data: output logic<32>,
+    wen     : input  logic    ,
+    waddr   : input  logic<5> ,
+    wdata   : input  logic<32>,
+) {
+    var regfile: logic<32, 32>;
+
+    always_comb {
+        rs1_data = if rs1_addr == 0 ? 32'b0 : regfile[rs1_addr];
+        rs2_data = if rs2_addr == 0 ? 32'b0 : regfile[rs2_addr];
+    }
+
+    always_ff {
+        if wen == 1 {
+            regfile[waddr] = wdata;
+        }
+    }
+}

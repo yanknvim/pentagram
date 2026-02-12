@@ -1,0 +1,77 @@
+import utils::*;
+
+module Core (
+    clk: input clock,
+    rst: input reset,
+) {
+    var pc         : logic   <32>;
+    var instruction: logic   <32>;
+    var ctrl       : ExecCtrl    ;
+    var alu_data   : logic   <32>;
+    let wb_data    : logic   <32> = case ctrl.itype {
+        InstType::I: alu_data,
+        default    : 'x,
+    };
+
+    always_ff {
+        if_reset {
+            pc = 32'b0;
+        } else {
+            pc = pc + 4;
+        }
+    }
+
+    inst inst_mem: InstMem (
+        addr: pc >> 2    ,
+        data: instruction,
+    );
+
+    // Register
+    let rs1_addr: logic<5>  = instruction[19:15];
+    let rs2_addr: logic<5>  = instruction[24:20];
+    var rs1_data: logic<32>;
+    var rs2_data: logic<32>;
+    let rd      : logic<5>  = instruction[11:7];
+    inst regfile: Regfile (
+        clk                  ,
+        rst                  ,
+        rs1_addr             ,
+        rs1_data             ,
+        rs2_addr             ,
+        rs2_data             ,
+        wen     : ctrl.is_reg,
+        waddr   : rd         ,
+        wdata   : wb_data    ,
+    );
+
+    // Decoder
+    var imm: logic<32>;
+    inst decoder: Decoder (
+        instruction  ,
+        imm          ,
+        ctrl         ,
+    );
+
+    // ALU
+    let a: logic<32> = case ctrl.itype {
+        InstType::I: rs1_data,
+        default    : 'x,
+    };
+
+    let b: logic<32> = case ctrl.itype {
+        InstType::I: imm,
+        default    : 'x,
+    };
+
+    let funct3: logic<3> = instruction[14:12];
+    let funct7: logic<7> = instruction[31:25];
+    inst alu: Alu (
+        a               ,
+        b               ,
+        ctrl            ,
+        funct3          ,
+        funct7          ,
+        data  : alu_data,
+    );
+
+}

@@ -1,0 +1,7 @@
+.build/
+/target
+/dependencies/
+.DS_Store
+a.out
+*.f
+*.vcd

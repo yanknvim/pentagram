@@ -1,0 +1,19 @@
+package utils {
+    enum Opcode: logic<7> {
+        OP_IMM = 7'b0010011,
+    }
+
+    enum InstType {
+        R,
+        I,
+        S,
+        B,
+        U,
+        J,
+    }
+
+    struct ExecCtrl {
+        itype : InstType,
+        is_reg: logic   ,
+    }
+}

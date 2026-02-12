@@ -1,0 +1,20 @@
+import utils::*;
+
+module Alu (
+    a     : input  logic   <32>,
+    b     : input  logic   <32>,
+    ctrl  : input  ExecCtrl    ,
+    funct3: input  logic   <3> ,
+    funct7: input  logic   <7> ,
+    data  : output logic   <32>,
+) {
+    always_comb {
+        data = case ctrl.itype {
+            InstType::I: case funct3 {
+                3'b000 : a + b,
+                default: 'x,
+            },
+            default: a + b,
+        };
+    }
+}

@@ -1,0 +1,34 @@
+import utils::*;
+
+module Decoder (
+    instruction: input  logic   <32>,
+    imm        : output logic   <32>,
+    ctrl       : output ExecCtrl    ,
+) {
+    const T: logic = 1'b1;
+    const F: logic = 1'b0;
+
+    let op: logic<7> = instruction[6:0];
+
+    let imm_i: logic<12> = instruction[31:20];
+
+    let imm_i_ext: logic<32> = {instruction[31] repeat 20, imm_i};
+
+    always_comb {
+        imm = case op {
+            Opcode::OP_IMM: imm_i_ext,
+            default       : 'x,
+        };
+
+        ctrl = {
+            case op {
+                Opcode::OP_IMM: {
+                    InstType::I, T
+                },
+                default: {
+                    InstType::I, F,
+                },
+            },
+        };
+    }
+}
