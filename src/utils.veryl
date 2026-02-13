@@ -1,5 +1,6 @@
 package utils {
     enum Opcode: logic<7> {
+        OP = 7'b0110011,
         OP_IMM = 7'b0010011,
     }
 

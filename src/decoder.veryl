@@ -22,6 +22,9 @@ module Decoder (
 
         ctrl = {
             case op {
+                Opcode::OP: {
+                    InstType::R, T
+                },
                 Opcode::OP_IMM: {
                     InstType::I, T
                 },

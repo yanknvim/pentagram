@@ -8,9 +8,10 @@ module Core (
     var instruction: logic   <32>;
     var ctrl       : ExecCtrl    ;
     var alu_data   : logic   <32>;
-    let wb_data    : logic   <32> = case ctrl.itype {
-        InstType::I: alu_data,
-        default    : 'x,
+
+    let wb_data: logic<32> = case ctrl.itype {
+        InstType::I, InstType::R: alu_data,
+        default                 : 'x,
     };
 
     always_ff {
@@ -54,12 +55,13 @@ module Core (
 
     // ALU
     let a: logic<32> = case ctrl.itype {
-        InstType::I: rs1_data,
-        default    : 'x,
+        InstType::I, InstType::R: rs1_data,
+        default                 : 'x,
     };
 
     let b: logic<32> = case ctrl.itype {
         InstType::I: imm,
+        InstType::R: rs2_data,
         default    : 'x,
     };
 
@@ -73,5 +75,4 @@ module Core (
         funct7          ,
         data  : alu_data,
     );
-
 }
