@@ -56,11 +56,12 @@ module Core (
     // ALU
     let a: logic<32> = case ctrl.itype {
         InstType::I, InstType::R: rs1_data,
+        InstType::U: if ctrl.is_lui ? 32'b0 : pc,
         default                 : 'x,
     };
 
     let b: logic<32> = case ctrl.itype {
-        InstType::I: imm,
+        InstType::I, InstType::U: imm,
         InstType::R: rs2_data,
         default    : 'x,
     };

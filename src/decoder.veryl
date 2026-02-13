@@ -11,25 +11,34 @@ module Decoder (
     let op: logic<7> = instruction[6:0];
 
     let imm_i: logic<12> = instruction[31:20];
+    let imm_u: logic<20> = instruction[31:12];
 
     let imm_i_ext: logic<32> = {instruction[31] repeat 20, imm_i};
+    let imm_u_ext: logic<32> = {imm_u, 12'b0};
 
     always_comb {
         imm = case op {
             Opcode::OP_IMM: imm_i_ext,
+            Opcode::LUI, Opcode::AUIPC: imm_u_ext,
             default       : 'x,
         };
 
         ctrl = {
             case op {
+                Opcode::LUI: {
+                    InstType::U, T, T,
+                },
+                Opcode::AUIPC: {
+                    InstType::U, F, T,
+                },
                 Opcode::OP: {
-                    InstType::R, T
+                    InstType::R, F, T
                 },
                 Opcode::OP_IMM: {
-                    InstType::I, T
+                    InstType::I, F, T
                 },
                 default: {
-                    InstType::I, F,
+                    InstType::I, F, F,
                 },
             },
         };

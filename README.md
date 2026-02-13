@@ -5,7 +5,7 @@ RISCV CPU implemented with Veryl
 - [ ] Implement RV32I
     - [x] Implement I instructions
     - [x] Implement R instructions
-    - [ ] Implement U instructions
+    - [x] Implement U instructions
     - [ ] Implement S instructions
     - [ ] Implement J instructions
     - [ ] Implement B instructions
