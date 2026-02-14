@@ -6,8 +6,9 @@ RISCV CPU implemented with Veryl
     - [x] Implement I instructions
     - [x] Implement R instructions
     - [x] Implement U instructions
-    - [ ] Implement S instructions
+    - [x] Implement S instructions
     - [ ] Implement J instructions
     - [ ] Implement B instructions
 
 - [ ] MMIO
+- [ ] Because of bug with Icarus Verilog, use Verilator

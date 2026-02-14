@@ -6,13 +6,12 @@ module Core (
 ) {
     var pc         : logic   <32>;
     var instruction: logic   <32>;
+    var imm        : logic   <32>;
     var ctrl       : ExecCtrl    ;
+    var wb_data    : logic   <32>;
     var alu_data   : logic   <32>;
 
-    let wb_data: logic<32> = case ctrl.itype {
-        InstType::I, InstType::R: alu_data,
-        default                 : 'x,
-    };
+    let funct3: logic<3> = instruction[14:12];
 
     always_ff {
         if_reset {
@@ -21,11 +20,6 @@ module Core (
             pc = pc + 4;
         }
     }
-
-    inst inst_mem: InstMem (
-        addr: pc >> 2    ,
-        data: instruction,
-    );
 
     // Register
     let rs1_addr: logic<5>  = instruction[19:15];
@@ -46,27 +40,42 @@ module Core (
     );
 
     // Decoder
-    var imm: logic<32>;
     inst decoder: Decoder (
         instruction  ,
         imm          ,
         ctrl         ,
     );
 
+    // Memory
+    inst inst_mem: InstMem (
+        addr: pc >> 2    ,
+        data: instruction,
+    );
+
+    var mem_data: logic<32>;
+    inst data_mem: DataMem (
+        clk                              ,
+        rst                              ,
+        addr  : rs1_data + imm           ,
+        data  : mem_data                 ,
+        wen   : ctrl.itype == InstType::S,
+        wdata : wb_data                  ,
+        funct3: funct3                   ,
+    );
+
     // ALU
     let a: logic<32> = case ctrl.itype {
         InstType::I, InstType::R: rs1_data,
-        InstType::U: if ctrl.is_lui ? 32'b0 : pc,
+        InstType::U             : pc,
         default                 : 'x,
     };
 
     let b: logic<32> = case ctrl.itype {
         InstType::I, InstType::U: imm,
-        InstType::R: rs2_data,
-        default    : 'x,
+        InstType::R             : rs2_data,
+        default                 : 'x,
     };
 
-    let funct3: logic<3> = instruction[14:12];
     let funct7: logic<7> = instruction[31:25];
     inst alu: Alu (
         a               ,
@@ -76,4 +85,14 @@ module Core (
         funct7          ,
         data  : alu_data,
     );
+
+    always_comb {
+        wb_data = case ctrl.itype {
+            InstType::I: if ctrl.is_load ? mem_data : alu_data,
+            InstType::R: alu_data,
+            InstType::U: if ctrl.is_lui ? imm : pc + imm,
+            InstType::S: rs2_data,
+            default    : 'x,
+        };
+    }
 }

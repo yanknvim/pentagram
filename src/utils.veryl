@@ -4,6 +4,8 @@ package utils {
         AUIPC = 7'b0010111,
         OP = 7'b0110011,
         OP_IMM = 7'b0010011,
+        STORE = 7'b0100011,
+        LOAD = 7'b0000011,
     }
 
     enum InstType {
@@ -16,8 +18,9 @@ package utils {
     }
 
     struct ExecCtrl {
-        itype : InstType,
-        is_lui: logic,
-        is_reg: logic   ,
+        itype  : InstType,
+        is_lui : logic   ,
+        is_reg : logic   ,
+        is_load: logic   ,
     }
 }

@@ -12,33 +12,42 @@ module Decoder (
 
     let imm_i: logic<12> = instruction[31:20];
     let imm_u: logic<20> = instruction[31:12];
+    let imm_s: logic<12> = {instruction[31:25], instruction[11:7]};
 
     let imm_i_ext: logic<32> = {instruction[31] repeat 20, imm_i};
     let imm_u_ext: logic<32> = {imm_u, 12'b0};
+    let imm_s_ext: logic<32> = {instruction[31] repeat 20, imm_s};
 
     always_comb {
         imm = case op {
-            Opcode::OP_IMM: imm_i_ext,
-            Opcode::LUI, Opcode::AUIPC: imm_u_ext,
-            default       : 'x,
+            Opcode::OP_IMM, Opcode::LOAD: imm_i_ext,
+            Opcode::LUI, Opcode::AUIPC  : imm_u_ext,
+            Opcode::STORE               : imm_s_ext,
+            default                     : 'x,
         };
 
         ctrl = {
             case op {
                 Opcode::LUI: {
-                    InstType::U, T, T,
+                    InstType::U, T, T, F
                 },
                 Opcode::AUIPC: {
-                    InstType::U, F, T,
+                    InstType::U, F, T, F
                 },
                 Opcode::OP: {
-                    InstType::R, F, T
+                    InstType::R, F, T, F
                 },
                 Opcode::OP_IMM: {
-                    InstType::I, F, T
+                    InstType::I, F, T, F
+                },
+                Opcode::STORE: {
+                    InstType::S, F, F, F
+                },
+                Opcode::LOAD: {
+                    InstType::I, F, T, T
                 },
                 default: {
-                    InstType::I, F, F,
+                    InstType::I, F, F, F
                 },
             },
         };
