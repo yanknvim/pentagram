@@ -6,6 +6,9 @@ package utils {
         OP_IMM = 7'b0010011,
         STORE = 7'b0100011,
         LOAD = 7'b0000011,
+        JAL = 7'b1101111,
+        JALR = 7'b1100111,
+        BRANCH = 7'b1100011,
     }
 
     enum InstType {
@@ -18,9 +21,11 @@ package utils {
     }
 
     struct ExecCtrl {
-        itype  : InstType,
-        is_lui : logic   ,
-        is_reg : logic   ,
-        is_load: logic   ,
+        itype    : InstType,
+        is_lui   : logic   ,
+        is_reg   : logic   ,
+        is_load  : logic   ,
+        is_jump  : logic   ,
+        is_branch: logic   ,
     }
 }

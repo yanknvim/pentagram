@@ -10,12 +10,15 @@ module Core (
     var ctrl       : ExecCtrl    ;
     var wb_data    : logic   <32>;
     var alu_data   : logic   <32>;
+    var b_flag     : logic       ;
 
     let funct3: logic<3> = instruction[14:12];
 
     always_ff {
         if_reset {
             pc = 32'b0;
+        } else if ctrl.is_jump || (ctrl.is_branch && b_flag) {
+            pc = pc + $signed(imm);
         } else {
             pc = pc + 4;
         }
@@ -86,12 +89,25 @@ module Core (
         data  : alu_data,
     );
 
+    // Branch
+    inst branch: Branch (
+        rs1   : rs1_data,
+        rs2   : rs2_data,
+        funct3          ,
+        branch: b_flag  ,
+    );
+
     always_comb {
         wb_data = case ctrl.itype {
-            InstType::I: if ctrl.is_load ? mem_data : alu_data,
+            InstType::I : switch {
+                ctrl.is_load: mem_data,
+                ctrl.is_jump: pc + 4,
+                default     : alu_data
+            },
             InstType::R: alu_data,
             InstType::U: if ctrl.is_lui ? imm : pc + imm,
             InstType::S: rs2_data,
+            InstType::J: pc + 4,
             default    : 'x,
         };
     }

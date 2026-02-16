@@ -1,0 +1,18 @@
+import utils::*;
+
+module Branch (
+    rs1   : input  logic<32>,
+    rs2   : input  logic<32>,
+    funct3: input  logic<3> ,
+    branch: output logic    ,
+) {
+    assign branch = case funct3 {
+        3'b000 : rs1 == rs2,
+        3'b001 : rs1 != rs2,
+        3'b100 : rs1 <: $signed(rs2),
+        3'b101 : rs1 >= $signed(rs2),
+        3'b110 : rs1 <: rs2,
+        3'b111 : rs1 >= rs2,
+        default: 0,
+    };
+}

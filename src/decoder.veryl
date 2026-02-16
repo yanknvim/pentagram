@@ -13,41 +13,56 @@ module Decoder (
     let imm_i: logic<12> = instruction[31:20];
     let imm_u: logic<20> = instruction[31:12];
     let imm_s: logic<12> = {instruction[31:25], instruction[11:7]};
+    let imm_j: logic<20> = {instruction[31], instruction[19:12], instruction[20], instruction[30:21]};
+    let imm_b: logic<12> = {instruction[31], instruction[7], instruction[30:25], instruction[11:8]};
 
     let imm_i_ext: logic<32> = {instruction[31] repeat 20, imm_i};
     let imm_u_ext: logic<32> = {imm_u, 12'b0};
     let imm_s_ext: logic<32> = {instruction[31] repeat 20, imm_s};
+    let imm_j_ext: logic<32> = {instruction[31] repeat 12, imm_j};
+    let imm_b_ext: logic<32> = {instruction[31] repeat 20, imm_b};
 
     always_comb {
         imm = case op {
-            Opcode::OP_IMM, Opcode::LOAD: imm_i_ext,
-            Opcode::LUI, Opcode::AUIPC  : imm_u_ext,
-            Opcode::STORE               : imm_s_ext,
-            default                     : 'x,
+            Opcode::OP_IMM, Opcode::LOAD, Opcode::JALR: imm_i_ext,
+            Opcode::LUI, Opcode::AUIPC                : imm_u_ext,
+            Opcode::STORE                             : imm_s_ext,
+            Opcode::JAL                               : imm_j_ext,
+            Opcode::BRANCH                            : imm_b_ext,
+            default                                   : 'x,
         };
 
         ctrl = {
             case op {
                 Opcode::LUI: {
-                    InstType::U, T, T, F
+                    InstType::U, T, T, F, F, F
                 },
                 Opcode::AUIPC: {
-                    InstType::U, F, T, F
+                    InstType::U, F, T, F, F, F
                 },
                 Opcode::OP: {
-                    InstType::R, F, T, F
+                    InstType::R, F, T, F, F, F
                 },
                 Opcode::OP_IMM: {
-                    InstType::I, F, T, F
+                    InstType::I, F, T, F, F, F
                 },
                 Opcode::STORE: {
-                    InstType::S, F, F, F
+                    InstType::S, F, F, F, F, F
                 },
                 Opcode::LOAD: {
-                    InstType::I, F, T, T
+                    InstType::I, F, T, T, F, F
+                },
+                Opcode::JAL: {
+                    InstType::J, F, T, F, T, F
+                },
+                Opcode::JALR: {
+                    InstType::I, F, T, F, T, F
+                },
+                Opcode::BRANCH: {
+                    InstType::B, F, F, F, F, T
                 },
                 default: {
-                    InstType::I, F, F, F
+                    InstType::I, F, F, F, F, F
                 },
             },
         };
