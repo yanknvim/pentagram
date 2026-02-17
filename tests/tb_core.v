@@ -24,7 +24,7 @@ module core_tb;
         #10;
         rst = 1'b1;
 
-        #100;
+        #1000000000;
         $finish;
     end
 endmodule

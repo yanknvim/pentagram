@@ -1,8 +1,9 @@
 import utils::*;
 
 module Core (
-    clk: input clock,
-    rst: input reset,
+    clk    : input  clock,
+    rst    : input  reset,
+    tx_line: output logic,
 ) {
     var pc         : logic   <32>;
     var instruction: logic   <32>;
@@ -57,13 +58,14 @@ module Core (
 
     var mem_data: logic<32>;
     inst data_mem: DataMem (
-        clk                              ,
-        rst                              ,
-        addr  : rs1_data + imm           ,
-        data  : mem_data                 ,
-        wen   : ctrl.itype == InstType::S,
-        wdata : wb_data                  ,
-        funct3: funct3                   ,
+        clk                               ,
+        rst                               ,
+        addr   : rs1_data + imm           ,
+        data   : mem_data                 ,
+        wen    : ctrl.itype == InstType::S,
+        wdata  : wb_data                  ,
+        funct3 : funct3                   ,
+        tx_line                           ,
     );
 
     // ALU

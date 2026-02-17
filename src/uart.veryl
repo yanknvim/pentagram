@@ -1,0 +1,81 @@
+import utils::*;
+
+module UART #(
+    param CLK_FREQ : u32 = 27_000_000,
+    param BAUD_RATE: u32 = 115200    ,
+) (
+    clk     : input  clock   ,
+    rst     : input  reset   ,
+    tx_data : input  logic<8>,
+    tx_start: input  logic   ,
+    tx_busy : output logic   ,
+    tx_line : output logic   ,
+) {
+    const BAUD_DIVIDER: u32 = CLK_FREQ / BAUD_RATE;
+
+    enum State {
+        Idle,
+        Start,
+        Send,
+        Stop,
+    }
+
+    var state   : State   ;
+    var tx_reg  : logic<8>;
+    var baud_cnt: u32     ;
+    var bit_cnt : u32     ;
+
+    always_ff {
+        if_reset {
+            state    = State::Idle;
+            tx_busy  = 0;
+            tx_line  = 1;
+            baud_cnt = 0;
+        } else {
+            case state {
+                State::Idle: {
+                    tx_line = 1;
+                    tx_busy = 0;
+                    if tx_start {
+                        tx_reg   = tx_data;
+                        tx_busy  = 1;
+                        state    = State::Start;
+                        baud_cnt = 0;
+                    }
+                }
+                State::Start: {
+                    tx_line = 0;
+                    if baud_cnt == BAUD_DIVIDER - 1 {
+                        state    = State::Send;
+                        baud_cnt = 0;
+                        bit_cnt  = 0;
+                    } else {
+                        baud_cnt += 1;
+                    }
+                }
+                State::Send: {
+                    tx_line = tx_reg[bit_cnt];
+                    if baud_cnt == BAUD_DIVIDER - 1 {
+                        baud_cnt = 0;
+                        if bit_cnt == 7 {
+                            state = State::Stop;
+                        } else {
+                            bit_cnt += 1;
+                        }
+                    } else {
+                        baud_cnt += 1;
+                    }
+                }
+                State::Stop: {
+                    tx_line = 1;
+                    if baud_cnt == BAUD_DIVIDER - 1 {
+                        state   = State::Idle;
+                        tx_busy = 0;
+                    } else {
+                        baud_cnt += 1;
+                    }
+                }
+            }
+        }
+    }
+}

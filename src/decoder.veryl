@@ -19,8 +19,8 @@ module Decoder (
     let imm_i_ext: logic<32> = {instruction[31] repeat 20, imm_i};
     let imm_u_ext: logic<32> = {imm_u, 12'b0};
     let imm_s_ext: logic<32> = {instruction[31] repeat 20, imm_s};
-    let imm_j_ext: logic<32> = {instruction[31] repeat 12, imm_j};
-    let imm_b_ext: logic<32> = {instruction[31] repeat 20, imm_b};
+    let imm_j_ext: logic<32> = {instruction[31] repeat 11, imm_j, 1'b0};
+    let imm_b_ext: logic<32> = {instruction[31] repeat 19, imm_b, 1'b0};
 
     always_comb {
         imm = case op {
