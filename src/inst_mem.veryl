@@ -1,16 +1,18 @@
 import utils::*;
 
 module InstMem (
+    clk : input  clock    ,
+    rst : input  reset    ,
     addr: input  logic<32>,
     data: output logic<32>,
 ) {
-    var mem: logic<32> [2048];
+    var mem: logic<32> [1024];
 
     initial {
         $readmemh("tests/test.hex", mem);
     }
 
-    always_comb {
+    always_ff {
         data = mem[addr];
     }
 }

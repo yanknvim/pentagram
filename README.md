@@ -13,4 +13,7 @@ RISCV CPU implemented with Veryl
 - [ ] Fence
 
 - [ ] MMIO
+    - [ ] LED IO
+
+- [ ] Port to Tang Primer 25K
 - [ ] Because of bug with Icarus Verilog, use Verilator

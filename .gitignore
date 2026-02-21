@@ -1,7 +1,12 @@
 .build/
 /target
 /dependencies/
-.DS_Store
 sim
 *.f
 *.vcd
+
+*.o
+*.elf
+*.bin
+
+.DS_Store

@@ -27,22 +27,6 @@ module DataMem (
         tx_line         ,
     );
 
-    always_comb {
-        data = if addr == UART_FLAG_ADDR ?
-            {1'b0 repeat 7, tx_busy}
-        :
-            case funct3 {
-                3'b000 : {mem[addr][7] repeat 24, mem[addr]},
-                3'b001 : {mem[addr][7] repeat 16, mem[addr + 1], mem[addr]},
-                3'b010 : {mem[addr + 3], mem[addr + 2], mem[addr + 1], mem[addr]},
-                3'b100 : {1'b0 repeat 24, mem[addr]},
-                3'b101 : {1'b0 repeat 16, mem[addr + 1], mem[addr]},
-                3'b110 : {mem[addr + 3], mem[addr + 2], mem[addr + 1], mem[addr]},
-                default: 'x,
-            }
-        ;
-    }
-
     always_ff {
         if wen == 1 {
             if addr == UART_ADDR {
@@ -72,5 +56,19 @@ module DataMem (
         } else {
             tx_start = 0;
         }
+
+        data = if addr == UART_FLAG_ADDR ?
+            {1'b0 repeat 7, tx_busy}
+        :
+            case funct3 {
+                3'b000 : {mem[addr][7] repeat 24, mem[addr]},
+                3'b001 : {mem[addr][7] repeat 16, mem[addr + 1], mem[addr]},
+                3'b010 : {mem[addr + 3], mem[addr + 2], mem[addr + 1], mem[addr]},
+                3'b100 : {1'b0 repeat 24, mem[addr]},
+                3'b101 : {1'b0 repeat 16, mem[addr + 1], mem[addr]},
+                3'b110 : {mem[addr + 3], mem[addr + 2], mem[addr + 1], mem[addr]},
+                default: 'x,
+            }
+        ;
     }
 }
