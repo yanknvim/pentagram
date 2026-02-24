@@ -10,10 +10,15 @@ RISCV CPU implemented with Veryl
     - [x] Implement J instructions
     - [x] Implement B instructions
 
-- [ ] Fence
+- [ ] Implement RV64I
 
+- [ ] Fence
+- [ ] CSR
+
+- [ ] Memory Bus
 - [ ] MMIO
     - [ ] LED IO
 
 - [ ] Port to Tang Primer 25K
 - [ ] Because of bug with Icarus Verilog, use Verilator
+
