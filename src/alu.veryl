@@ -11,7 +11,7 @@ module Alu (
     let slt : logic<32> = {1'b0 repeat 31, $signed(a) <: $signed(b)};
     let sltu: logic<32> = {1'b0 repeat 31, a <: b};
     let srl : logic<32> = a >> b[4:0];
-    let sra : logic<32> = a >> $signed(b[4:0]);
+    let sra : logic<32> = $signed(a) >>> $signed(b[4:0]);
 
     always_comb {
         data = case ctrl.itype {

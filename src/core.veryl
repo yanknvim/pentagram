@@ -1,36 +1,43 @@
 import utils::*;
 
 module Core (
-    clk    : input  clock,
-    rst    : input  reset,
-    tx_line: output logic,
+    clk: input  clock,
+    rst: input  reset,
+    led: output logic,
 ) {
-    var pc         : logic   <32>;
-    var instruction: logic   <32>;
-    var imm        : logic   <32>;
-    var ctrl       : ExecCtrl    ;
-    var wb_data    : logic   <32>;
-    var alu_data   : logic   <32>;
-    var b_flag     : logic       ;
+    var pc         : logic<32>;
+    var instruction: logic<32>;
+
+    var imm     : logic   <32>;
+    var ctrl    : ExecCtrl    ;
+    var alu_data: logic   <32>;
+    var b_flag  : logic       ;
+
+    let rs1_addr: logic<5>  = instruction[19:15];
+    let rs2_addr: logic<5>  = instruction[24:20];
+    var rs1_data: logic<32>;
+    var rs2_data: logic<32>;
+    let rd      : logic<5>  = instruction[11:7];
+
+    var wb_data: logic<32>;
 
     let funct3: logic<3> = instruction[14:12];
 
     always_ff {
         if_reset {
             pc = 32'b0;
-        } else if ctrl.is_jump || (ctrl.is_branch && b_flag) {
-            pc = pc + $signed(imm);
         } else {
-            pc = pc + 4;
+            let next_pc: logic<32> = switch {
+                ctrl.is_jump && ctrl.itype == InstType::I : (rs1_data + $signed(imm)) & ~32'b1,
+                ctrl.is_jump || (ctrl.is_branch && b_flag): pc + $signed(imm),
+                default                                   : pc + 4,
+            };
+
+            pc = next_pc;
         }
     }
 
     // Register
-    let rs1_addr: logic<5>  = instruction[19:15];
-    let rs2_addr: logic<5>  = instruction[24:20];
-    var rs1_data: logic<32>;
-    var rs2_data: logic<32>;
-    let rd      : logic<5>  = instruction[11:7];
     inst regfile: Regfile (
         clk                  ,
         rst                  ,
@@ -52,22 +59,22 @@ module Core (
 
     // Memory
     inst inst_mem: InstMem (
-        clk              ,
-        rst              ,
         addr: pc >> 2    ,
         data: instruction,
     );
 
     var mem_data: logic<32>;
     inst data_mem: DataMem (
-        clk                               ,
-        rst                               ,
-        addr   : rs1_data + imm           ,
-        data   : mem_data                 ,
-        wen    : ctrl.itype == InstType::S,
-        wdata  : wb_data                  ,
-        funct3 : funct3                   ,
-        tx_line                           ,
+        clk                              ,
+        rst                              ,
+        addr  : rs1_data + imm           ,
+        data  : mem_data                 ,
+        wen   : ctrl.itype == InstType::S,
+        wdata : rs2_data                 ,
+        funct3: funct3                   ,
+        led                      
+        // tx_line                           ,
+        ,
     );
 
     // ALU
@@ -109,8 +116,7 @@ module Core (
                 default     : alu_data
             },
             InstType::R: alu_data,
-            InstType::U: if ctrl.is_lui ? imm : pc + imm,
-            InstType::S: rs2_data,
+            InstType::U: if ctrl.is_lui ? imm : alu_data,
             InstType::J: pc + 4,
             default    : 'x,
         };

@@ -20,9 +20,9 @@ module core_tb;
     end
 
     initial begin
-        rst = 1'b0;
-        #10;
         rst = 1'b1;
+        #10;
+        rst = 1'b0;
 
         #1000000000;
         $finish;

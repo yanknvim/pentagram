@@ -9,8 +9,8 @@ module Branch (
     assign branch = case funct3 {
         3'b000 : rs1 == rs2,
         3'b001 : rs1 != rs2,
-        3'b100 : rs1 <: $signed(rs2),
-        3'b101 : rs1 >= $signed(rs2),
+        3'b100 : $signed(rs1) <: $signed(rs2),
+        3'b101 : $signed(rs1) >= $signed(rs2),
         3'b110 : rs1 <: rs2,
         3'b111 : rs1 >= rs2,
         default: 0,
