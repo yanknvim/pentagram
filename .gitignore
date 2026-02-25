@@ -10,3 +10,4 @@ sim
 *.bin
 
 .DS_Store
+.sisyphus
