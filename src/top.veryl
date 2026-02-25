@@ -1,0 +1,13 @@
+import utils::*;
+
+module Top (
+    clk: input  clock,
+    rst: input  reset,
+    led: output logic,
+) {
+    inst core: Core (
+        clk,
+        rst,
+        led,
+    );
+}
