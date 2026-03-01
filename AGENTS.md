@@ -1,5 +1,10 @@
 # AGENTS.md — Pentagram (RISC-V CPU in Veryl)
 
+## Agent Rules
+
+- **言語**: ユーザーへの応答はすべて **日本語** で行うこと。コード・コマンド・技術用語はそのままで可。
+- **Git 操作の禁止**: `git commit`、`git push`、`git checkout`、`git rebase` 等の git 操作を自動的に実行してはならない。git 操作が必要な場合はユーザーに確認し、明示的な許可を得てから実行すること。
+
 ## Project Overview
 
 Pentagram is an RV32I RISC-V CPU implemented in **Veryl** (a modern HDL transpiling to SystemVerilog).

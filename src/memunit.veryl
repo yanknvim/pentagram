@@ -1,0 +1,98 @@
+import utils::*;
+
+module MemUnit (
+    clk   : input   clock             ,
+    rst   : input   reset             ,
+    addr  : input   logic         <32>,
+    data  : output  logic         <32>,
+    wdata : input   logic         <32>,
+    wen   : input   logic             ,
+    funct3: input   logic         <3> ,
+    valid : input   logic             ,
+    stall : output  logic             ,
+    membus: modport MemBus::master    ,
+) {
+    enum State {
+        Init,
+        WaitReady,
+        WaitValid,
+    }
+
+    var state: State;
+
+    var req_addr : logic<32>;
+    var req_wdata: logic<32>;
+    var req_wen  : logic    ;
+    var req_be   : logic<4> ;
+
+    let D   : logic<32> = membus.data;
+    let sext: logic     = funct3[2] == 1'b0;
+
+    always_comb {
+        membus.valid = state == State::WaitReady;
+        membus.addr  = req_addr;
+        membus.wen   = req_wen;
+        membus.wdata = req_wdata;
+        membus.be    = req_be;
+
+        data = case funct3[1:0] {
+            2'b00: case addr[1:0] {
+                0      : {sext & D[7] repeat 24, D[7:0]},
+                1      : {sext & D[15] repeat 24, D[15:8]},
+                2      : {sext & D[23] repeat 24, D[23:16]},
+                3      : {sext & D[31] repeat 24, D[31:24]},
+                default: 'x,
+            },
+            2'b01: case addr[1:0] {
+                0      : {sext & D[15] repeat 16, D[15:0]},
+                2      : {sext & D[31] repeat 16, D[31:16]},
+                default: 'x,
+            },
+            2'b10  : D,
+            default: 'x,
+        };
+
+        stall = valid & case state {
+            State::Init     : valid,
+            State::WaitReady: 1,
+            State::WaitValid: !membus.rready,
+            default         : 0,
+        };
+    }
+
+    always_ff {
+        if_reset {
+            state     = State::Init;
+            req_addr  = 0;
+            req_wdata = 0;
+            req_wen   = 0;
+            req_be    = 0;
+        } else {
+            if !valid {
+                state = State::Init;
+            } else {
+                case state {
+                    State::Init: {
+                        state     = State::WaitReady;
+                        req_addr  = addr;
+                        req_wdata = wdata << {addr[1:0], 3'b0};
+                        req_wen   = wen;
+                        req_be    = case funct3[1:0] {
+                            2'b00  : 4'b0001 << addr[1:0],
+                            2'b01  : 4'b0011 << addr[1:0],
+                            2'b10  : 4'b1111,
+                            default: 4'b0000,
+                        };
+                    }
+                    State::WaitReady: if membus.ready {
+                        state = State::WaitValid;
+                    }
+                    State::WaitValid: if membus.rready {
+                        state = State::Init;
+                    }
+                    default: {}
+                }
+            }
+        }
+    }
+}

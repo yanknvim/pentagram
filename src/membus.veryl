@@ -1,0 +1,25 @@
+interface MemBus {
+    var valid : logic    ;
+    var ready : logic    ;
+    var rready: logic    ;
+    var addr  : logic<32>;
+    var data  : logic<32>;
+    var wen   : logic    ;
+    var wdata : logic<32>;
+    var be    : logic<4> ;
+
+    modport master {
+        valid : output,
+        ready : input ,
+        rready: input ,
+        addr  : output,
+        data  : input ,
+        wen   : output,
+        wdata : output,
+        be    : output,
+    }
+
+    modport slave {
+        ..converse(master)
+    }
+}

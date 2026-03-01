@@ -1,13 +1,20 @@
 import utils::*;
 
 module Top (
-    clk: input  clock,
-    rst: input  reset,
-    led: output logic,
+    clk: input clock,
+    rst: input reset,
 ) {
+    inst bus: MemBus;
+
     inst core: Core (
-        clk,
-        rst,
-        led,
+        clk  ,
+        rst  ,
+        bus  ,
+    );
+
+    inst mem: Memory (
+        clk  ,
+        rst  ,
+        bus  ,
     );
 }

@@ -25,6 +25,7 @@ package utils {
         is_lui   : logic   ,
         is_reg   : logic   ,
         is_load  : logic   ,
+        is_store : logic   ,
         is_jump  : logic   ,
         is_branch: logic   ,
     }

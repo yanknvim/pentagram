@@ -1,39 +1,118 @@
 import utils::*;
 
 module Core (
-    clk: input  clock,
-    rst: input  reset,
-    led: output logic,
+    clk: input   clock         ,
+    rst: input   reset         ,
+    bus: modport MemBus::master,
 ) {
-    var pc         : logic<32>;
-    var instruction: logic<32>;
+    var pc            : logic<32>;
+    var if_pc         : logic<32>;
+    var if_instruction: logic<32>;
 
     var imm     : logic   <32>;
     var ctrl    : ExecCtrl    ;
     var alu_data: logic   <32>;
     var b_flag  : logic       ;
 
-    let rs1_addr: logic<5>  = instruction[19:15];
-    let rs2_addr: logic<5>  = instruction[24:20];
+    let rs1_addr: logic<5>  = if_instruction[19:15];
+    let rs2_addr: logic<5>  = if_instruction[24:20];
     var rs1_data: logic<32>;
     var rs2_data: logic<32>;
-    let rd      : logic<5>  = instruction[11:7];
+    let rd      : logic<5>  = if_instruction[11:7];
 
     var wb_data: logic<32>;
 
-    let funct3: logic<3> = instruction[14:12];
+    let funct3: logic<3> = if_instruction[14:12];
+    let funct7: logic<7> = if_instruction[31:25];
+
+    var mem_addr  : logic<32>;
+    var mem_data  : logic<32>;
+    var mem_wen   : logic    ;
+    var mem_funct3: logic<3> ;
+    var mem_valid : logic    ;
+
+    var stall: logic;
+
+    // MemUnit
+    inst memunit: MemUnit (
+        clk               ,
+        rst               ,
+        addr  : mem_addr  ,
+        data  : mem_data  ,
+        wdata : rs2_data  ,
+        wen   : mem_wen   ,
+        funct3: mem_funct3,
+        valid : mem_valid ,
+        stall             ,
+        membus: bus       ,
+    );
+
+    let next_pc: logic<32> = switch {
+        ctrl.is_jump && ctrl.itype == InstType::I : (rs1_data + $signed(imm)) & ~32'b1,
+        ctrl.is_jump || (ctrl.is_branch && b_flag): if_pc + $signed(imm),
+        default                                   : pc + 4,
+    };
+
+    let is_mem_op: logic = ctrl.is_load || ctrl.is_store;
+
+    enum MemState {
+        Fetch,
+        Data,
+    }
+
+    var mem_state: MemState;
+
+    always_comb {
+        case mem_state {
+            MemState::Fetch: {
+                mem_valid  = 1'b1;
+                mem_addr   = pc;
+                mem_wen    = 1'b0;
+                mem_funct3 = 3'b010;
+            }
+            MemState::Data: {
+                mem_valid  = 1'b1;
+                mem_addr   = rs1_data + imm;
+                mem_wen    = ctrl.is_store;
+                mem_funct3 = funct3;
+            }
+        }
+    }
 
     always_ff {
         if_reset {
-            pc = 32'b0;
+            pc             = 32'b0;
+            if_pc          = 32'b0;
+            if_instruction = 32'b0;
+            mem_state      = MemState::Fetch;
         } else {
-            let next_pc: logic<32> = switch {
-                ctrl.is_jump && ctrl.itype == InstType::I : (rs1_data + $signed(imm)) & ~32'b1,
-                ctrl.is_jump || (ctrl.is_branch && b_flag): pc + $signed(imm),
-                default                                   : pc + 4,
-            };
-
-            pc = next_pc;
+            case mem_state {
+                MemState::Fetch: {
+                    if !stall {
+                        if ctrl.is_jump || (ctrl.is_branch && b_flag) {
+                            pc             = next_pc;
+                            if_instruction = 32'b0;
+                            mem_state      = MemState::Fetch;
+                        } else if ctrl.is_load || ctrl.is_store {
+                            if_instruction = mem_data;
+                            if_pc          = pc;
+                            mem_state      = MemState::Data;
+                        } else {
+                            if_instruction = mem_data;
+                            if_pc          = pc;
+                            pc             = next_pc;
+                            mem_state      = MemState::Fetch;
+                        }
+                    }
+                }
+                MemState::Data: {
+                    if !stall {
+                        pc             = next_pc;
+                        mem_state      = MemState::Fetch;
+                        if_instruction = 32'h0;
+                    }
+                }
+            }
         }
     }
 
@@ -52,35 +131,15 @@ module Core (
 
     // Decoder
     inst decoder: Decoder (
-        instruction  ,
-        imm          ,
-        ctrl         ,
-    );
-
-    // Memory
-    inst inst_mem: InstMem (
-        addr: pc >> 2    ,
-        data: instruction,
-    );
-
-    var mem_data: logic<32>;
-    inst data_mem: DataMem (
-        clk                              ,
-        rst                              ,
-        addr  : rs1_data + imm           ,
-        data  : mem_data                 ,
-        wen   : ctrl.itype == InstType::S,
-        wdata : rs2_data                 ,
-        funct3: funct3                   ,
-        led                      
-        // tx_line                           ,
-        ,
+        instruction: if_instruction,
+        imm                        ,
+        ctrl                       ,
     );
 
     // ALU
     let a: logic<32> = case ctrl.itype {
         InstType::I, InstType::R: rs1_data,
-        InstType::U             : pc,
+        InstType::U             : if_pc,
         default                 : 'x,
     };
 
@@ -90,7 +149,6 @@ module Core (
         default                 : 'x,
     };
 
-    let funct7: logic<7> = instruction[31:25];
     inst alu: Alu (
         a               ,
         b               ,
@@ -112,12 +170,12 @@ module Core (
         wb_data = case ctrl.itype {
             InstType::I : switch {
                 ctrl.is_load: mem_data,
-                ctrl.is_jump: pc + 4,
+                ctrl.is_jump: if_pc + 4,
                 default     : alu_data
             },
             InstType::R: alu_data,
             InstType::U: if ctrl.is_lui ? imm : alu_data,
-            InstType::J: pc + 4,
+            InstType::J: if_pc + 4,
             default    : 'x,
         };
     }

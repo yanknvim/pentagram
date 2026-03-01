@@ -1,4 +1,4 @@
-# Pentagon
+# Pentagram
 RISCV CPU implemented with Veryl
 
 # Todo

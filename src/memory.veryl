@@ -1,0 +1,49 @@
+import utils::*;
+
+module Memory (
+    clk: input   clock        ,
+    rst: input   reset        ,
+    bus: modport MemBus::slave,
+) {
+    var mem: logic<32> [1024];
+
+    let word_addr: logic<10> = bus.addr[11:2];
+
+    initial {
+        var path: string;
+
+        if $value$plusargs("FILEPATH=%s", path) {
+            $readmemh(path, mem);
+        }
+    }
+
+    assign bus.ready = 1;
+
+    always_ff {
+        if_reset {
+            bus.rready = 0;
+            bus.data   = 'x;
+        } else {
+            bus.rready = bus.valid && bus.ready;
+
+            if bus.valid && bus.ready {
+                if bus.wen {
+                    if bus.be[0] {
+                        mem[word_addr][7:0] = bus.wdata[7:0];
+                    }
+                    if bus.be[1] {
+                        mem[word_addr][15:8] = bus.wdata[15:8];
+                    }
+                    if bus.be[2] {
+                        mem[word_addr][23:16] = bus.wdata[23:16];
+                    }
+                    if bus.be[3] {
+                        mem[word_addr][31:24] = bus.wdata[31:24];
+                    }
+                } else {
+                    bus.data = mem[word_addr];
+                }
+            }
+        }
+    }
+}

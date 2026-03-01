@@ -1,7 +1,8 @@
 [project]
 name = "pentagram"
 version = "0.1.0"
+
 [build]
-source = "src"
+sources = ["src"]
 reset_type = "async_high"
 target = {type = "directory", path = "target"}

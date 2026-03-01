@@ -35,34 +35,34 @@ module Decoder (
         ctrl = {
             case op {
                 Opcode::LUI: {
-                    InstType::U, T, T, F, F, F
+                    InstType::U, T, T, F, F, F, F
                 },
                 Opcode::AUIPC: {
-                    InstType::U, F, T, F, F, F
+                    InstType::U, F, T, F, F, F, F
                 },
                 Opcode::OP: {
-                    InstType::R, F, T, F, F, F
+                    InstType::R, F, T, F, F, F, F
                 },
                 Opcode::OP_IMM: {
-                    InstType::I, F, T, F, F, F
+                    InstType::I, F, T, F, F, F, F
                 },
                 Opcode::STORE: {
-                    InstType::S, F, F, F, F, F
+                    InstType::S, F, F, F, T, F, F
                 },
                 Opcode::LOAD: {
-                    InstType::I, F, T, T, F, F
+                    InstType::I, F, T, T, F, F, F
                 },
                 Opcode::JAL: {
-                    InstType::J, F, T, F, T, F
+                    InstType::J, F, T, F, F, T, F
                 },
                 Opcode::JALR: {
-                    InstType::I, F, T, F, T, F
+                    InstType::I, F, T, F, F, T, F
                 },
                 Opcode::BRANCH: {
-                    InstType::B, F, F, F, F, T
+                    InstType::B, F, F, F, F, F, T
                 },
                 default: {
-                    InstType::I, F, F, F, F, F
+                    InstType::I, F, F, F, F, F, F
                 },
             },
         };
