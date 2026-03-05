@@ -16,7 +16,7 @@ module Alu (
     always_comb {
         data = case ctrl.itype {
             InstType::I, InstType::R: case funct3 {
-                3'b000 : if ctrl.itype == InstType::I | funct7[5] == 0 ? a + b : a - b,
+                3'b000 : if ctrl.itype == InstType::I || funct7[5] == 0 ? a + b : a - b,
                 3'b010 : slt,
                 3'b011 : sltu,
                 3'b100 : a ^ b,

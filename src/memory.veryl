@@ -5,9 +5,9 @@ module Memory (
     rst: input   reset        ,
     bus: modport MemBus::slave,
 ) {
-    var mem: logic<32> [1024];
+    var mem: logic<32> [1024 * 1024];
 
-    let word_addr: logic<10> = bus.addr[11:2];
+    let word_addr: logic<20> = bus.addr[21:2];
 
     initial {
         var path: string;

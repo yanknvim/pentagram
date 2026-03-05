@@ -55,7 +55,7 @@ ifdef FILEPATH
 endif
 SIM_ARGS += --cycles=$(CYCLES) --vcd=$(VCD)
 
-.PHONY: all build sim clean
+.PHONY: all build sim test-all clean
 
 all: build
 
@@ -73,3 +73,10 @@ sim: $(SIM_BIN)
 
 clean:
 	rm -rf $(PROJ_ROOT)/tests/obj_dir $(SIM_BIN) $(VCD)
+
+# riscv-tests 一括実行
+TEST_CYCLES ?= 10000
+TEST_HEX_DIR ?= $(PROJ_ROOT)/tests/share/riscv-tests/isa
+
+test-all: $(SIM_BIN)
+	@$(PROJ_ROOT)/tests/run_tests.sh $(SIM_BIN) $(TEST_HEX_DIR) $(TEST_CYCLES)

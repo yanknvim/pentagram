@@ -8,13 +8,14 @@
 ## Project Overview
 
 Pentagram is an RV32I RISC-V CPU implemented in **Veryl** (a modern HDL transpiling to SystemVerilog).
-Single-cycle, Harvard architecture. Separate instruction/data memory, MMIO (LED `0xFE000000`, UART `0xFF000000`).
+Multi-cycle architecture with a unified memory bus (`MemBus` interface). The CPU uses a Fetch/Data state machine in `Core` to sequence instruction fetch and data (load/store) operations over the shared bus. Memory is accessed through `MemUnit` which handles byte/halfword alignment and bus handshaking.
 
 ## Toolchain
 
 - **Veryl** v0.18.0 — HDL compiler (`veryl build` → SystemVerilog in `target/`)
 - **just** — Task runner (see `Justfile`)
-- **iverilog** v12.0 — Verilog simulator
+- **Verilator** v5.044 — Primary simulator (C++ testbench)
+- **iverilog** v12.0 — Verilog simulator (legacy, referenced in Justfile but testbench does not exist)
 - **riscv32-unknown-elf-gcc** — Cross-compiler for test programs
 
 ## Build / Check / Test Commands
@@ -30,10 +31,11 @@ veryl build src/alu.veryl
 veryl check src/alu.veryl
 veryl fmt src/alu.veryl
 
-# Full test: build + simulate with iverilog
-just test
-# Manual test (after build):
-iverilog -g2012 -o sim -f pentagram.f tests/tb_core.v && ./sim
+# Verilator simulation (primary method):
+cd tests && make                                    # build testbench binary
+cd tests && make sim FILEPATH=path/to/test.hex      # build + run simulation
+cd tests && make sim FILEPATH=test.hex CYCLES=50000 # custom cycle count
+cd tests && make clean                              # clean build artifacts
 ```
 
 ### Test Programs (C → hex)
@@ -42,27 +44,33 @@ Tests in `tests/<name>/` each have a Makefile producing `inst.hex` + `data.hex`:
 ```bash
 cd tests/blink && make      # or: cd tests/rule30 && make
 ```
-Copy `inst.hex` to `tests/test.hex` to load into instruction memory for simulation.
+The hex file path is passed to the simulator via `+FILEPATH=` plusarg.
 
 ## Project Structure
 
 ```
 src/                    # Veryl source files
   utils.veryl           # Shared package: Opcode, InstType, ExecCtrl
-  core.veryl            # CPU core: PC, pipeline wiring, writeback mux
+  core.veryl            # CPU core: PC, Fetch/Data state machine, pipeline wiring, writeback mux
   decoder.veryl         # Instruction decoder: opcode → immediate + control
   alu.veryl             # ALU: arithmetic/logic operations
   branch.veryl          # Branch comparator
   regfile.veryl         # 32-register file
-  inst_mem.veryl        # Instruction memory (loads from hex)
-  data_mem.veryl        # Data memory + MMIO
-  uart.veryl            # UART transmitter (commented out in data_mem)
-  top.veryl             # Top-level wrapper
+  membus.veryl          # Memory bus interface (MemBus) with master/slave modports
+  memunit.veryl         # Memory access unit: byte/halfword alignment, bus handshaking
+  memory.veryl          # Unified memory (1024 words, loads from hex via $readmemh)
+  uart.veryl            # UART transmitter (standalone module, not connected)
+  top.veryl             # Top-level wrapper: Core + Memory connected via MemBus
 target/                 # Generated .sv files (git-ignored)
 tests/                  # Test programs and testbench
+  tb_top.cpp            # Verilator C++ testbench (VCD trace, configurable cycles)
+  Makefile              # Verilator build & simulation rules
+  blink/                # LED blink test program
+  rule30/               # Rule 30 cellular automaton test program
+dependencies/           # Veryl standard library (auto-managed)
 Veryl.toml              # Project config (reset_type = "async_high")
-Justfile                # Build commands
-pentagram.f             # Verilog file list for iverilog
+Justfile                # Build commands (veryl build; iverilog test is stale)
+pentagram.f             # SystemVerilog file list for simulation
 ```
 
 ## Code Style Guidelines
@@ -71,7 +79,8 @@ pentagram.f             # Verilog file list for iverilog
 
 | Element       | Convention       | Examples                              |
 |---------------|------------------|---------------------------------------|
-| Modules       | PascalCase       | `Core`, `DataMem`, `UART`             |
+| Modules       | PascalCase       | `Core`, `Memory`, `UART`, `MemUnit`   |
+| Interfaces    | PascalCase       | `MemBus`                              |
 | Packages      | snake_case       | `utils`                               |
 | Enums/Structs | PascalCase       | `Opcode`, `InstType`, `ExecCtrl`      |
 | Enum variants | PascalCase/UPPER | `State::Idle`, `Opcode::LUI`          |
@@ -88,12 +97,23 @@ Every module file starts with `import utils::*;` — wildcard import of the shar
 
 Aligned colons, direction, type. Trailing comma on last port. `clock`/`reset` are built-in types:
 ```veryl
-module DataMem (
-    clk   : input  clock    ,
-    rst   : input  reset    ,
-    addr  : input  logic<32>,
-    data  : output logic<32>,
+module Memory (
+    clk: input   clock        ,
+    rst: input   reset        ,
+    bus: modport MemBus::slave,
 ) {
+```
+
+### Interface Declaration
+
+```veryl
+interface MemBus {
+    var valid : logic    ;
+    var ready : logic    ;
+    // ...
+    modport master { valid: output, ready: input, ... }
+    modport slave  { ..converse(master) }
+}
 ```
 
 ### Module Instantiation
@@ -169,7 +189,5 @@ package utils {
 
 ## Known Issues
 
-- `Veryl.toml` uses deprecated `source` field (should be `sources`)
-- `veryl check` reports 2 `missing_reset_statement` warnings in `uart.veryl`
-- UART is commented out in `data_mem.veryl` (LED MMIO active instead)
-- Testbench `tests/tb_core.v` referenced in Justfile does not exist in repo
+- Justfile の `test` ターゲットは存在しない `tests/tb_core.v` (iverilog) を参照している。実際のテストは `tests/Makefile` (Verilator) を使用すること
+- UART モジュールは存在するが、どのモジュールにも接続されていない（スタンドアロン）

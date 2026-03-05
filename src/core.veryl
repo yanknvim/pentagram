@@ -53,8 +53,6 @@ module Core (
         default                                   : pc + 4,
     };
 
-    let is_mem_op: logic = ctrl.is_load || ctrl.is_store;
-
     enum MemState {
         Fetch,
         Data,
@@ -76,6 +74,12 @@ module Core (
                 mem_wen    = ctrl.is_store;
                 mem_funct3 = funct3;
             }
+            default: {
+                mem_valid  = 1'b0;
+                mem_addr   = 32'b0;
+                mem_wen    = 1'b0;
+                mem_funct3 = 3'b010;
+            }
         }
     }
 
@@ -94,9 +98,8 @@ module Core (
                             if_instruction = 32'b0;
                             mem_state      = MemState::Fetch;
                         } else if ctrl.is_load || ctrl.is_store {
-                            if_instruction = mem_data;
-                            if_pc          = pc;
-                            mem_state      = MemState::Data;
+                            if_pc     = pc;
+                            mem_state = MemState::Data;
                         } else {
                             if_instruction = mem_data;
                             if_pc          = pc;
@@ -107,9 +110,8 @@ module Core (
                 }
                 MemState::Data: {
                     if !stall {
-                        pc             = next_pc;
+                        if_instruction = 32'b0;
                         mem_state      = MemState::Fetch;
-                        if_instruction = 32'h0;
                     }
                 }
             }
@@ -118,15 +120,15 @@ module Core (
 
     // Register
     inst regfile: Regfile (
-        clk                  ,
-        rst                  ,
-        rs1_addr             ,
-        rs1_data             ,
-        rs2_addr             ,
-        rs2_data             ,
-        wen     : ctrl.is_reg,
-        waddr   : rd         ,
-        wdata   : wb_data    ,
+        clk                            ,
+        rst                            ,
+        rs1_addr                       ,
+        rs1_data                       ,
+        rs2_addr                       ,
+        rs2_data                       ,
+        wen     : ctrl.is_reg && !stall,
+        waddr   : rd                   ,
+        wdata   : wb_data              ,
     );
 
     // Decoder
